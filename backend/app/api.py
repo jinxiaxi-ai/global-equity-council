@@ -13,7 +13,7 @@ from .models import (
     HealthResponse,
     SearchResult,
 )
-from .providers import FixtureProvider
+from .providers import FixtureProvider, build_data_provider
 
 router = APIRouter()
 provider = FixtureProvider()
@@ -67,7 +67,7 @@ async def analyze(request: Request, payload: AnalysisRequest) -> AnalysisReport:
     try:
         settings = get_settings()
         return await build_report(
-            provider,
+            build_data_provider(settings),
             payload.asset_id.upper(),
             payload.base_currency.upper(),
             build_llm(settings),

@@ -74,7 +74,11 @@ Copy `.env.example` to `.env`. Defaults are safe for local fixture mode.
 | `LLM_PROVIDER` | `demo` | `demo` or `openai` |
 | `OPENAI_API_KEY` | empty | Required only for `LLM_PROVIDER=openai` |
 | `OPENAI_MODEL` | `gpt-4.1-mini` | OpenAI Responses API model |
-| `DATA_PROVIDER` | `fixture` | Explicit data-mode configuration |
+| `DATA_PROVIDER` | `fixture` | `fixture`, `twelvedata`, or `finnhub` quote mode |
+| `MARKET_DATA_API_KEY` | empty | Optional BYOK quote key used by Twelve Data or Finnhub |
+| `TWELVEDATA_API_KEY` | empty | Optional provider-specific Twelve Data key |
+| `FINNHUB_API_KEY` | empty | Optional provider-specific Finnhub key |
+| `MARKET_DATA_CACHE_TTL_SECONDS` | `900` | Live quote cache TTL to reduce API usage and rate limits |
 | `DATABASE_URL` | SQLite | Provider cache; accepts SQLite or PostgreSQL URLs |
 | `SEC_USER_AGENT` | project contact | Required identification for SEC live requests |
 | `CORS_ORIGINS` | local origins | Comma-separated browser origins |
@@ -86,6 +90,30 @@ The committee calls the selected provider for its chair synthesis.
 is present. The deterministic provider is the default and emits stable output
 for tests. Credentials are never stored in source.
 
+### BYOK live quote mode
+
+Open-source deployments should use Bring Your Own Key (BYOK). Copy
+`.env.example` to `.env`, then set either Twelve Data or Finnhub:
+
+```bash
+DATA_PROVIDER=twelvedata
+TWELVEDATA_API_KEY=your_key_here
+```
+
+or:
+
+```bash
+DATA_PROVIDER=finnhub
+FINNHUB_API_KEY=your_key_here
+```
+
+The key is read only by the FastAPI backend. Do not put market-data keys in
+frontend code or `VITE_*` variables; those are visible in the browser bundle.
+When a live provider succeeds, the `market_price.provenance.data_mode` becomes
+`live`. Repeated requests within the TTL return `cached`. If the key is missing,
+unsupported, rate-limited, or the provider fails, the API falls back to the
+fixture snapshot and labels it as `fixture`.
+
 ## Architecture
 
 ```mermaid
@@ -96,6 +124,7 @@ flowchart LR
     Council --> Functional["8 functional agents"]
     Council --> Providers["Provider interfaces"]
     Providers --> Fixture["Deterministic 5-market fixtures"]
+    Providers --> BYOK["BYOK quote overlay: Twelve Data / Finnhub"]
     Providers --> SEC["SEC EDGAR live adapter"]
     Providers --> Future["HKEX / EDINET / SSE / IR adapters"]
     Council --> LLM["LLM abstraction"]
@@ -114,6 +143,9 @@ normalized primary-source fixtures and retain replacement interfaces.
 
 - A fixture is a dated research snapshot, not a current quote. It is visibly
   labeled `fixture` throughout the API, report, and share card.
+- BYOK quote providers update only the market-price point. Fundamentals still
+  come from sourced filings/fixtures unless a separate fundamentals adapter is
+  added.
 - Dated ECB-normalized FX rates are for repeatable cross-currency tests, not
   execution.
 - GAAP, IFRS, and CAS remain visible. Fiscal year-end and units are never

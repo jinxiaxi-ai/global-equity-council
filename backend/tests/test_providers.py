@@ -1,8 +1,15 @@
 import pytest
 
+from app.config import Settings
 from app.fixtures import ASSETS
 from app.models import DataMode
-from app.providers import FixtureProvider, SQLiteCache, build_cache
+from app.providers import (
+    BYOKMarketDataProvider,
+    FixtureProvider,
+    SQLiteCache,
+    build_cache,
+    build_data_provider,
+)
 
 REQUIRED_ASSETS = [
     "XNAS:AAPL",
@@ -69,3 +76,56 @@ def test_sqlite_cache_contract_and_database_selection(tmp_path) -> None:
 def test_rejects_unknown_database_scheme() -> None:
     with pytest.raises(ValueError, match="DATABASE_URL"):
         build_cache("mysql://localhost/example")
+
+
+@pytest.mark.asyncio
+async def test_byok_provider_overlays_live_quote_and_cache(monkeypatch, tmp_path) -> None:
+    settings = Settings(
+        data_provider="twelvedata",
+        market_data_api_key="user-key",
+        database_url=f"sqlite:///{tmp_path / 'provider.db'}",
+    )
+    provider = BYOKMarketDataProvider(settings, build_cache(settings.database_url))
+
+    async def fake_fetch(provider_name: str, asset_id: str, key: str) -> dict[str, object]:
+        assert provider_name == "twelvedata"
+        assert asset_id == "XNAS:AAOI"
+        assert key == "user-key"
+        return {
+            "provider": "twelvedata",
+            "source_name": "Twelve Data quote API",
+            "source_url": "https://twelvedata.com/docs#quote",
+            "symbol": "AAOI",
+            "price": 42.25,
+            "currency": "USD",
+            "period": "2026-07-02",
+            "retrieved_at": "2026-07-02T14:00:00+00:00",
+            "confidence": 0.92,
+            "provenance": "User-supplied Twelve Data API key fetched the latest available quote.",
+        }
+
+    monkeypatch.setattr(provider, "_fetch_quote", fake_fetch)
+    live = await provider.price("XNAS:AAOI")
+    assert live.value == 42.25
+    assert live.provenance.data_mode is DataMode.live
+    assert live.period == "2026-07-02"
+
+    async def unexpected_fetch(provider_name: str, asset_id: str, key: str) -> dict[str, object]:
+        raise AssertionError("cached quote should not refetch")
+
+    monkeypatch.setattr(provider, "_fetch_quote", unexpected_fetch)
+    cached = await provider.price("XNAS:AAOI")
+    assert cached.value == 42.25
+    assert cached.provenance.data_mode is DataMode.cached
+
+
+@pytest.mark.asyncio
+async def test_byok_provider_without_key_keeps_fixture_mode(tmp_path) -> None:
+    settings = Settings(
+        data_provider="finnhub",
+        market_data_api_key=None,
+        database_url=f"sqlite:///{tmp_path / 'provider.db'}",
+    )
+    provider = build_data_provider(settings)
+    price = await provider.price("XNAS:MU")
+    assert price.provenance.data_mode is DataMode.fixture

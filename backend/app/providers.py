@@ -326,6 +326,158 @@ class FixtureProvider(
         return COMPANIES[asset_id]
 
 
+class BYOKMarketDataProvider(FixtureProvider):
+    """Fixture fundamentals plus user-supplied live quote adapters.
+
+    The open-source default remains deterministic and credential-free. When a
+    user configures DATA_PROVIDER=twelvedata or DATA_PROVIDER=finnhub with a key,
+    this provider overlays the market-price point with a live or cached quote and
+    leaves all fundamental/evidence fixtures provenance-visible.
+    """
+
+    TWELVEDATA_DOCS = "https://twelvedata.com/docs#quote"
+    FINNHUB_DOCS = "https://finnhub.io/docs/api/quote"
+
+    def __init__(self, settings: Settings, cache: ProviderCache | None = None) -> None:
+        self.settings = settings
+        self.cache = cache
+
+    async def price(self, asset_id: str) -> MetricPoint:
+        provider = self.settings.data_provider.strip().lower()
+        key = self._api_key(provider)
+        if provider == "fixture" or not key:
+            return await super().price(asset_id)
+
+        cache_key = f"quote:{provider}:{asset_id}"
+        if self.cache:
+            cached = self.cache.get(cache_key)
+            if cached:
+                return self._quote_metric(asset_id, cached, DataMode.cached)
+
+        try:
+            payload = await with_retry(lambda: self._fetch_quote(provider, asset_id, key))
+        except ProviderError:
+            return await super().price(asset_id)
+
+        if self.cache:
+            self.cache.set(
+                cache_key,
+                payload,
+                ttl_seconds=max(60, self.settings.market_data_cache_ttl_seconds),
+            )
+        return self._quote_metric(asset_id, payload, DataMode.live)
+
+    def _api_key(self, provider: str) -> str | None:
+        if provider == "twelvedata":
+            return self.settings.twelvedata_api_key or self.settings.market_data_api_key
+        if provider == "finnhub":
+            return self.settings.finnhub_api_key or self.settings.market_data_api_key
+        return None
+
+    async def _fetch_quote(self, provider: str, asset_id: str, key: str) -> dict[str, Any]:
+        if provider == "twelvedata":
+            return await self._fetch_twelvedata_quote(asset_id, key)
+        if provider == "finnhub":
+            return await self._fetch_finnhub_quote(asset_id, key)
+        raise ProviderError(f"unsupported DATA_PROVIDER={provider}")
+
+    async def _fetch_twelvedata_quote(self, asset_id: str, key: str) -> dict[str, Any]:
+        asset = self.asset(asset_id)
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            response = await client.get(
+                "https://api.twelvedata.com/quote",
+                params={"symbol": self._quote_symbol(asset_id, "twelvedata"), "apikey": key},
+            )
+            response.raise_for_status()
+        body = dict(response.json())
+        if body.get("status") == "error" or not body.get("close"):
+            raise ProviderError(str(body.get("message", "Twelve Data quote missing close")))
+        return {
+            "provider": "twelvedata",
+            "source_name": "Twelve Data quote API",
+            "source_url": self.TWELVEDATA_DOCS,
+            "symbol": body.get("symbol") or asset.symbol,
+            "price": float(body["close"]),
+            "currency": str(body.get("currency") or asset.trading_currency).upper(),
+            "period": str(body.get("datetime") or date.today().isoformat()),
+            "retrieved_at": datetime.utcnow().replace(microsecond=0).isoformat() + "+00:00",
+            "confidence": 0.92,
+            "provenance": "User-supplied Twelve Data API key fetched the latest available quote.",
+        }
+
+    async def _fetch_finnhub_quote(self, asset_id: str, key: str) -> dict[str, Any]:
+        asset = self.asset(asset_id)
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            response = await client.get(
+                "https://finnhub.io/api/v1/quote",
+                params={"symbol": self._quote_symbol(asset_id, "finnhub"), "token": key},
+            )
+            response.raise_for_status()
+        body = dict(response.json())
+        price = float(body.get("c") or 0)
+        timestamp = int(body.get("t") or 0)
+        if price <= 0 or timestamp <= 0:
+            raise ProviderError("Finnhub quote missing current price or timestamp")
+        period = datetime.utcfromtimestamp(timestamp).date().isoformat()
+        return {
+            "provider": "finnhub",
+            "source_name": "Finnhub quote API",
+            "source_url": self.FINNHUB_DOCS,
+            "symbol": asset.symbol,
+            "price": price,
+            "currency": asset.trading_currency,
+            "period": period,
+            "retrieved_at": datetime.utcnow().replace(microsecond=0).isoformat() + "+00:00",
+            "confidence": 0.90,
+            "provenance": "User-supplied Finnhub API key fetched the latest available quote.",
+        }
+
+    def _quote_metric(
+        self,
+        asset_id: str,
+        payload: dict[str, Any],
+        mode: DataMode,
+    ) -> MetricPoint:
+        asset = self.asset(asset_id)
+        period = str(payload["period"])
+        retrieved_at = datetime.fromisoformat(str(payload["retrieved_at"]))
+        return MetricPoint(
+            name="market_price",
+            label="Live quote" if mode is DataMode.live else "Cached quote",
+            value=float(payload["price"]),
+            unit=str(payload.get("currency") or asset.trading_currency).upper(),
+            period=period,
+            provenance=Provenance(
+                source_url=HttpUrl(str(payload["source_url"])),
+                source_name=str(payload["source_name"]),
+                retrieved_at=retrieved_at,
+                published_at=datetime.fromisoformat(f"{period}T12:00:00+00:00"),
+                fiscal_period=None,
+                reported_currency=str(payload.get("currency") or asset.trading_currency).upper(),
+                data_mode=mode,
+                confidence=float(payload.get("confidence", 0.90)),
+                provenance=str(payload["provenance"]),
+            ),
+        )
+
+    @staticmethod
+    def _quote_symbol(asset_id: str, provider: str) -> str:
+        asset = AssetIdentity(**ASSETS[asset_id])
+        if provider in asset.provider_symbols:
+            return asset.provider_symbols[provider]
+        if provider == "finnhub":
+            return asset.provider_symbols.get("yahoo", asset.symbol)
+        if provider == "twelvedata":
+            return asset.provider_symbols.get("yahoo", asset.symbol).replace(".SS", "")
+        return asset.symbol
+
+
+def build_data_provider(settings: Settings) -> FixtureProvider:
+    if settings.data_provider.strip().lower() == "fixture":
+        return FixtureProvider()
+    return BYOKMarketDataProvider(settings, build_cache(settings.database_url))
+
+
 class SecEdgarProvider(RegulatoryFilingProvider):
     """Live SEC company submissions adapter with cache, rate limit and fallback.
 

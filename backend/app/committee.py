@@ -508,13 +508,16 @@ async def build_report(
     )
     debate = _debate(persona_results, company, scenarios, locale)
     report_hash = hashlib.sha256(
-        f"{asset_id}|{base_currency}|{locale}|{AS_OF}|v2".encode()
+        (
+            f"{asset_id}|{base_currency}|{locale}|{AS_OF}|"
+            f"{price.provenance.data_mode}|{price.period}|{price.value}|v3"
+        ).encode()
     ).hexdigest()[:12]
     return AnalysisReport(
         report_id=f"gec-{report_hash}",
         analysis_date=date(2026, 1, 15),
         asset=asset,
-        data_mode=DataMode.fixture,
+        data_mode=price.provenance.data_mode,
         as_of=datetime.fromisoformat(AS_OF),
         source_summary=[
             company["source"]["name"],
@@ -562,17 +565,24 @@ async def build_report(
 def _localized_price(price: Any, locale: str) -> Any:
     if not _is_zh(locale):
         return price
+    label = {
+        DataMode.live: "最新行情价",
+        DataMode.cached: "缓存行情价",
+        DataMode.fixture: "Fixture 收盘价",
+    }[price.provenance.data_mode]
+    provenance = (
+        "来自用户自带 API key 的最新可用行情；仍需结合交易所延迟、订阅权限和市场时段解释。"
+        if price.provenance.data_mode is DataMode.live
+        else "来自缓存的用户自带行情数据；缓存用于降低 API 消耗和避免限流。"
+        if price.provenance.data_mode is DataMode.cached
+        else (
+            "来自所引用交易所/市场页面的版本化收盘价 fixture；财务数据另按主要来源披露进行标准化。"
+        )
+    )
     return price.model_copy(
         update={
-            "label": "Fixture 收盘价",
-            "provenance": price.provenance.model_copy(
-                update={
-                    "provenance": (
-                        "来自所引用交易所/市场页面的版本化收盘价 fixture；"
-                        "财务数据另按主要来源披露进行标准化。"
-                    )
-                }
-            ),
+            "label": label,
+            "provenance": price.provenance.model_copy(update={"provenance": provenance}),
         }
     )
 

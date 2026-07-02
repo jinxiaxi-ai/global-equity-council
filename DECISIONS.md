@@ -50,3 +50,14 @@
   The public demo remains no-key and deterministic; production deployments
   should wire a real quote provider instead of silently pretending fixtures are
   live.
+
+## 2026-07-02 — Bring Your Own Key market data
+
+- Follow the common GitHub open-source pattern: users provide their own market
+  data API key in `.env`; the repository never ships a shared production key.
+- Keep keys server-side only. `MARKET_DATA_API_KEY`, `TWELVEDATA_API_KEY`, and
+  `FINNHUB_API_KEY` are read by FastAPI, cached by the provider layer, and never
+  exposed through Vite/browser environment variables.
+- Implement live quote overlay providers for Twelve Data and Finnhub. They
+  update the market-price datapoint and provenance while retaining fixture
+  fundamentals unless a separate fundamentals adapter is configured later.

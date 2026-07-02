@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     app_name: str = "Global Equity Council"
     database_url: str = "sqlite:///./global_equity_council.db"
     data_provider: str = "fixture"
+    market_data_api_key: str | None = None
+    twelvedata_api_key: str | None = None
+    finnhub_api_key: str | None = None
+    market_data_cache_ttl_seconds: int = 900
     llm_provider: str = "demo"
     openai_api_key: str | None = None
     openai_model: str = "gpt-4.1-mini"
