@@ -1,0 +1,17 @@
+services:
+  council:
+    build: .
+    ports:
+      - "8080:8000"
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      DATA_PROVIDER: ${DATA_PROVIDER:-fixture}
+      DATABASE_URL: sqlite:////data/global_equity_council.db
+    volumes:
+      - council-data:/data
+    restart: unless-stopped
+
+volumes:
+  council-data:

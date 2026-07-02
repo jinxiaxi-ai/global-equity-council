@@ -1,0 +1,26 @@
+{
+  "name": "global-equity-council",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd backend && ../.venv/bin/uvicorn app.main:app --reload --port 8000",
+    "dev:web": "npm --prefix frontend run dev",
+    "install:all": "python3.11 -m venv .venv && .venv/bin/pip install -e './backend[dev]' && npm --prefix frontend install",
+    "format": "npm --prefix frontend run format && .venv/bin/ruff format backend",
+    "format:check": "npm --prefix frontend run format:check && .venv/bin/ruff format --check backend",
+    "lint": "npm --prefix frontend run lint && .venv/bin/ruff check backend",
+    "typecheck": "npm --prefix frontend run typecheck && .venv/bin/mypy backend/app",
+    "test": ".venv/bin/pytest backend && npm --prefix frontend run test",
+    "test:e2e": "npm --prefix frontend run test:e2e",
+    "build": "npm --prefix frontend run build",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run check:secrets"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

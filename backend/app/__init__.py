@@ -1,0 +1,1 @@
+"""Global Equity Council API."""
