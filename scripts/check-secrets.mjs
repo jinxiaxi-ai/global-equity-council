@@ -1,21 +1,50 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 
-const files = execFileSync("rg", [
-  "--files",
-  "-g",
-  "!node_modules",
-  "-g",
-  "!.venv",
-  "-g",
-  "!dist",
-  "-g",
-  "!.git",
-])
-  .toString()
-  .trim()
-  .split("\n")
-  .filter(Boolean);
+const ignoredNames = new Set([
+  ".git",
+  ".mypy_cache",
+  ".npm-cache",
+  ".pytest_cache",
+  ".ruff_cache",
+  ".venv",
+  "__pycache__",
+  "coverage",
+  "dist",
+  "node_modules",
+  "playwright-report",
+  "test-results",
+]);
+
+function trackedFiles() {
+  try {
+    return execFileSync("git", ["ls-files"])
+      .toString()
+      .trim()
+      .split("\n")
+      .filter(Boolean);
+  } catch {
+    return walk(".");
+  }
+}
+
+function walk(directory) {
+  const files = [];
+  for (const entry of readdirSync(directory)) {
+    if (ignoredNames.has(entry)) continue;
+    const path = join(directory, entry);
+    const stats = statSync(path);
+    if (stats.isDirectory()) {
+      files.push(...walk(path));
+    } else if (stats.isFile()) {
+      files.push(path);
+    }
+  }
+  return files;
+}
+
+const files = trackedFiles();
 
 const checks = [
   { name: "OpenAI key", regex: /\bsk-[A-Za-z0-9_-]{20,}\b/g },
