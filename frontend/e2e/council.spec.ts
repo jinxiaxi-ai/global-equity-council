@@ -99,6 +99,32 @@ test("language, theme, currency and share-card interactions work", async ({
   expectCleanBrowser();
 });
 
+test("manual ticker entry can convene and BYOK settings are visible", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name.includes("mobile"),
+    "desktop manual entry test",
+  );
+  const expectCleanBrowser = monitorBrowser(page);
+  await page.goto("/");
+  await expect(
+    page.getByRole("article", { name: /Apple Inc. research report/ }),
+  ).toBeVisible();
+  await page.getByLabel("搜索证券、交易所或公司").fill("MU");
+  await page.getByRole("button", { name: "召集委员会" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Micron Technology, Inc." }).first(),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /数据源/ }).click();
+  await expect(page.getByLabel("行情提供商")).toBeVisible();
+  await expect(page.getByLabel("API Key")).toBeVisible();
+  await expect(
+    page.getByText("Key 只保存在你浏览器的 localStorage"),
+  ).toBeVisible();
+  expectCleanBrowser();
+});
+
 test("mobile layout has no horizontal page overflow", async ({
   page,
 }, testInfo) => {

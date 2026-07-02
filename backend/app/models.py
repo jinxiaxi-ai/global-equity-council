@@ -138,6 +138,8 @@ class AnalysisRequest(BaseModel):
     asset_id: str
     base_currency: str = "USD"
     locale: str = "zh-CN"
+    market_data_provider: str | None = None
+    market_data_api_key: str | None = None
 
     @field_validator("asset_id")
     @classmethod
@@ -145,6 +147,16 @@ class AnalysisRequest(BaseModel):
         if ":" not in value:
             raise ValueError("asset_id must use MIC:symbol; ticker alone is ambiguous")
         return value
+
+    @field_validator("market_data_provider")
+    @classmethod
+    def validate_market_data_provider(cls, value: str | None) -> str | None:
+        if value is None or value == "":
+            return None
+        normalized = value.lower()
+        if normalized not in {"fixture", "twelvedata", "finnhub"}:
+            raise ValueError("market_data_provider must be fixture, twelvedata, or finnhub")
+        return normalized
 
 
 class AnalysisReport(BaseModel):

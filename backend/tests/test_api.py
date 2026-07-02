@@ -1,6 +1,9 @@
 from fastapi.testclient import TestClient
 
+from app.api import settings_for_request
+from app.config import Settings
 from app.main import app
+from app.models import AnalysisRequest
 
 client = TestClient(app)
 
@@ -68,3 +71,17 @@ def test_unsupported_asset_has_recovery_message() -> None:
     )
     assert response.status_code == 404
     assert "Search for a fixture-backed listing" in response.json()["detail"]
+
+
+def test_request_market_data_key_overrides_are_not_persisted() -> None:
+    base = Settings(data_provider="fixture", market_data_api_key=None)
+    payload = AnalysisRequest(
+        asset_id="XNAS:AAOI",
+        market_data_provider="twelvedata",
+        market_data_api_key="user-key",
+    )
+    scoped = settings_for_request(base, payload)
+    assert scoped.data_provider == "twelvedata"
+    assert scoped.market_data_api_key == "user-key"
+    assert base.data_provider == "fixture"
+    assert base.market_data_api_key is None

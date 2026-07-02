@@ -114,6 +114,12 @@ When a live provider succeeds, the `market_price.provenance.data_mode` becomes
 unsupported, rate-limited, or the provider fails, the API falls back to the
 fixture snapshot and labels it as `fixture`.
 
+For local browser use, the UI also includes a data-source settings panel under
+the search box. A user can choose `Twelve Data` or `Finnhub`, paste a key, and
+rerun the analysis without editing `.env`. That browser-local key is stored in
+`localStorage` and sent only with analysis requests to the backend serving the
+page. Do not enter private keys into an untrusted public deployment.
+
 ## Architecture
 
 ```mermaid

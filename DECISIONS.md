@@ -61,3 +61,10 @@
 - Implement live quote overlay providers for Twelve Data and Finnhub. They
   update the market-price datapoint and provenance while retaining fixture
   fundamentals unless a separate fundamentals adapter is configured later.
+- Add a browser-local BYOK settings panel for local users who do not want to
+  edit `.env`. The key is stored in `localStorage`, sent only with analysis
+  requests, and accompanied by a warning not to use it on untrusted hosted
+  deployments.
+- Allow manual ticker entry to convene directly. If one listing matches the
+  typed query, the app runs analysis without requiring a separate dropdown
+  selection.

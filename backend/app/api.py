@@ -33,6 +33,18 @@ def rate_limit(request: Request) -> None:
     bucket.append(now)
 
 
+def settings_for_request(settings: Settings, payload: AnalysisRequest) -> Settings:
+    """Apply per-request BYOK quote settings without persisting user keys."""
+    if not payload.market_data_provider:
+        return settings
+    return settings.model_copy(
+        update={
+            "data_provider": payload.market_data_provider,
+            "market_data_api_key": payload.market_data_api_key or None,
+        }
+    )
+
+
 @router.get("/health", response_model=HealthResponse)
 async def health(settings: Settings = settings_dependency) -> HealthResponse:
     llm = build_llm(settings)
@@ -65,7 +77,7 @@ async def get_asset(mic: str, symbol: str) -> AssetIdentity:
 async def analyze(request: Request, payload: AnalysisRequest) -> AnalysisReport:
     rate_limit(request)
     try:
-        settings = get_settings()
+        settings = settings_for_request(get_settings(), payload)
         return await build_report(
             build_data_provider(settings),
             payload.asset_id.upper(),

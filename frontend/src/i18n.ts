@@ -51,6 +51,16 @@ const copy = {
     errorTitle: "研究未能完成",
     noSearchResults:
       "没有找到已支持的样例证券。可试试 AAPL、MU、AAOI、600519.SS、0700.HK、7203.T 或 SAP。",
+    dataSource: "数据源",
+    provider: "行情提供商",
+    apiKey: "API Key",
+    apiKeyPlaceholder: "粘贴你的行情 API key",
+    apiKeyHelp:
+      "Key 只保存在你浏览器的 localStorage，并随分析请求发给本机后端；不要在不信任的公开部署里输入私人 key。",
+    apiKeyLocal: "已使用浏览器本地 API key",
+    apiKeyMissing: "缺少 API key，将回退演示快照",
+    fixtureMode: "演示模式，无需 API key",
+    saveSettings: "保存并应用",
     retry: "重试",
     footer: "仅供研究和教育，不构成投资建议。",
   },
@@ -104,6 +114,16 @@ const copy = {
     errorTitle: "Research could not complete",
     noSearchResults:
       "No supported fixture matched this query. Try AAPL, MU, AAOI, 600519.SS, 0700.HK, 7203.T, or SAP.",
+    dataSource: "Data source",
+    provider: "Market data provider",
+    apiKey: "API key",
+    apiKeyPlaceholder: "Paste your market-data API key",
+    apiKeyHelp:
+      "The key is stored only in your browser localStorage and sent to the local backend with analysis requests. Do not enter private keys on untrusted public deployments.",
+    apiKeyLocal: "Using browser-local API key",
+    apiKeyMissing: "Missing API key; falling back to snapshot",
+    fixtureMode: "Demo mode; no API key required",
+    saveSettings: "Save and apply",
     retry: "Retry",
     footer: "For research and education only. Not investment advice.",
   },

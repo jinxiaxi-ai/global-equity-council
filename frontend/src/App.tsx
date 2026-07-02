@@ -17,13 +17,19 @@ import {
   Search,
   Share2,
   ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
   Sun,
   Users,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { analyzeAsset, searchAssets } from "./api";
+import {
+  analyzeAsset,
+  type DataSourceConfig,
+  type MarketDataProvider,
+  searchAssets,
+} from "./api";
 import { type Language, useCopy } from "./i18n";
 import type {
   AgentResult,
@@ -35,6 +41,7 @@ import type {
 
 type Theme = "light" | "dark";
 type SectionIcon = typeof BookOpen;
+type StoredDataSource = DataSourceConfig & { saved: boolean };
 
 const quickSymbols = [
   "AAPL",
@@ -45,6 +52,22 @@ const quickSymbols = [
   "7203.T",
   "SAP",
 ];
+
+const providers: { value: MarketDataProvider; label: string }[] = [
+  { value: "fixture", label: "Fixture demo" },
+  { value: "twelvedata", label: "Twelve Data" },
+  { value: "finnhub", label: "Finnhub" },
+];
+
+function loadDataSource(): StoredDataSource {
+  return {
+    provider:
+      (localStorage.getItem("gec.marketDataProvider") as MarketDataProvider) ??
+      "fixture",
+    apiKey: localStorage.getItem("gec.marketDataApiKey") ?? "",
+    saved: true,
+  };
+}
 
 function formatNumber(value: number, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits }).format(
@@ -77,6 +100,9 @@ export function App() {
   const [error, setError] = useState("");
   const [shareOpen, setShareOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dataSource, setDataSource] =
+    useState<StoredDataSource>(loadDataSource);
   const initialized = useRef(false);
   const t = useCopy(language);
 
@@ -97,6 +123,10 @@ export function App() {
           asset.asset_id,
           currency,
           language === "zh" ? "zh-CN" : "en-US",
+          {
+            provider: dataSource.provider,
+            apiKey: dataSource.apiKey,
+          },
         );
         setReport(next);
         window.history.replaceState(
@@ -110,7 +140,7 @@ export function App() {
         setAnalyzing(false);
       }
     },
-    [baseCurrency, language],
+    [baseCurrency, dataSource.apiKey, dataSource.provider, language],
   );
 
   useEffect(() => {
@@ -178,9 +208,43 @@ export function App() {
     }
   };
 
+  const runQuery = async () => {
+    if (selected) {
+      await runAnalysis(selected);
+      return;
+    }
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    setSearching(true);
+    setError("");
+    try {
+      const items = await searchAssets(trimmed);
+      setResults(items);
+      if (items.length === 1) {
+        await runAnalysis(items[0]);
+      } else if (items.length > 1) {
+        setSearchOpen(true);
+      } else {
+        setSearchOpen(true);
+        setError(t.noSearchResults);
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Search failed");
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const changeCurrency = async (currency: string) => {
     setBaseCurrency(currency);
     if (selected) await runAnalysis(selected, currency);
+  };
+
+  const saveDataSource = () => {
+    localStorage.setItem("gec.marketDataProvider", dataSource.provider);
+    localStorage.setItem("gec.marketDataApiKey", dataSource.apiKey);
+    setDataSource((current) => ({ ...current, saved: true }));
+    if (selected) void runAnalysis(selected);
   };
 
   return (
@@ -243,8 +307,8 @@ export function App() {
               </div>
               <button
                 className="primary-button"
-                disabled={!selected || analyzing}
-                onClick={() => selected && void runAnalysis(selected)}
+                disabled={!query.trim() || searching || analyzing}
+                onClick={() => void runQuery()}
               >
                 {analyzing ? (
                   <LoaderCircle className="spin" size={18} />
@@ -254,6 +318,74 @@ export function App() {
                 {analyzing ? t.analyzing : t.analyze}
               </button>
             </div>
+            <div className="data-source-bar">
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setSettingsOpen((open) => !open)}
+              >
+                <SlidersHorizontal size={16} />
+                {t.dataSource}:{" "}
+                {providers.find((item) => item.value === dataSource.provider)
+                  ?.label ?? dataSource.provider}
+              </button>
+              <span>
+                {dataSource.provider === "fixture"
+                  ? t.fixtureMode
+                  : dataSource.apiKey.trim()
+                    ? t.apiKeyLocal
+                    : t.apiKeyMissing}
+              </span>
+            </div>
+            {settingsOpen && (
+              <div className="data-source-panel">
+                <label>
+                  {t.provider}
+                  <select
+                    value={dataSource.provider}
+                    onChange={(event) =>
+                      setDataSource({
+                        ...dataSource,
+                        provider: event.target.value as MarketDataProvider,
+                        saved: false,
+                      })
+                    }
+                  >
+                    {providers.map((provider) => (
+                      <option key={provider.value} value={provider.value}>
+                        {provider.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t.apiKey}
+                  <input
+                    type="password"
+                    value={dataSource.apiKey}
+                    onChange={(event) =>
+                      setDataSource({
+                        ...dataSource,
+                        apiKey: event.target.value,
+                        saved: false,
+                      })
+                    }
+                    disabled={dataSource.provider === "fixture"}
+                    placeholder={t.apiKeyPlaceholder}
+                    autoComplete="off"
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={saveDataSource}
+                >
+                  <Check size={16} />
+                  {t.saveSettings}
+                </button>
+                <p>{t.apiKeyHelp}</p>
+              </div>
+            )}
             {searchOpen && (
               <SearchResults
                 results={results}
