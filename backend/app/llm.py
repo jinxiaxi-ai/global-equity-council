@@ -16,6 +16,12 @@ class DeterministicDemoLLM(LLMProvider):
     async def complete(self, system: str, payload: dict[str, Any]) -> str:
         """Stable JSON rendering used by tests and credential-free deployments."""
         if system == "committee-chair-synthesis":
+            if str(payload.get("locale", "")).lower().startswith("zh"):
+                return (
+                    f"证据加权后的委员会评分为 {payload['score']}/100，结论为"
+                    f"“{payload['consensus']}”；估值区间和已披露的数据缺口"
+                    "比单一点位估计更重要。"
+                )
             return (
                 f"Evidence-weighted council score {payload['score']}/100 is "
                 f"{payload['consensus'].lower()}; the valuation range and declared "
@@ -43,6 +49,8 @@ class OpenAIProvider(LLMProvider):
             if system == "committee-chair-synthesis"
             else system
         )
+        if str(payload.get("locale", "")).lower().startswith("zh"):
+            instructions += " Respond in Simplified Chinese."
         async with httpx.AsyncClient(timeout=45.0) as client:
             response = await client.post(
                 "https://api.openai.com/v1/responses",

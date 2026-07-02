@@ -64,6 +64,16 @@ async def test_report_declares_uncertainty_and_disclaimer() -> None:
 
 
 @pytest.mark.asyncio
+async def test_zh_locale_localizes_analysis_content() -> None:
+    report = await build_report(FixtureProvider(), "XNAS:AAOI", "USD", locale="zh-CN")
+    assert report.company_summary.startswith("Applied Optoelectronics")
+    assert report.scenarios[0].name == "熊市"
+    assert report.agents[0].facts[0].startswith("最新 fixture 收入")
+    assert report.debate[0].statement.endswith("留出空间。")
+    assert "不构成投资建议" in report.disclaimer
+
+
+@pytest.mark.asyncio
 async def test_configured_llm_is_used_for_chair_synthesis() -> None:
     llm = RecordingLLM()
     report = await build_report(FixtureProvider(), "XNAS:AAPL", "USD", llm)

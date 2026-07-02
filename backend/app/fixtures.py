@@ -117,6 +117,30 @@ ASSETS: dict[str, dict[str, Any]] = {
         reporting_currency="EUR",
         primary=False,
     ),
+    "XNAS:MU": _asset(
+        "MU",
+        "Micron Technology, Inc.",
+        "NASDAQ",
+        "XNAS",
+        "United States",
+        "USD",
+        "America/New_York",
+        "en-US",
+        "MU",
+        "US5951121038",
+    ),
+    "XNAS:AAOI": _asset(
+        "AAOI",
+        "Applied Optoelectronics, Inc.",
+        "NASDAQ",
+        "XNAS",
+        "United States",
+        "USD",
+        "America/New_York",
+        "en-US",
+        "AAOI",
+        "US03823U1025",
+    ),
 }
 
 
@@ -265,6 +289,105 @@ COMPANIES: dict[str, dict[str, Any]] = {
         "fye": "December",
         "shares": 1190,
         "scenario_values": (175.0, 250.0, 335.0),
+    },
+    "XNAS:MU": {
+        "price": 92.10,
+        "price_source": (
+            "Nasdaq historical quotes",
+            "https://www.nasdaq.com/market-activity/stocks/mu/historical",
+        ),
+        "summary": (
+            "Micron manufactures memory and storage products, with earnings highly "
+            "sensitive to DRAM/NAND cycles and AI data-center demand."
+        ),
+        "summary_zh": (
+            "美光科技生产存储器和存储产品，盈利对 DRAM/NAND 周期、AI 数据中心需求"
+            "和资本开支纪律高度敏感。"
+        ),
+        "industry": (
+            "Semiconductors; cyclical memory supply, node transitions, pricing, and "
+            "AI server content growth drive outcomes."
+        ),
+        "industry_zh": (
+            "半导体存储行业；供给周期、制程切换、价格弹性和 AI 服务器存储含量是核心变量。"
+        ),
+        "accounting": (
+            "US GAAP; fiscal year ends in late August, so fiscal-period alignment "
+            "matters when comparing with calendar-year peers."
+        ),
+        "accounting_zh": (
+            "采用 US GAAP，财年通常在 8 月下旬结束；与自然年度公司比较时需要先统一期间口径。"
+        ),
+        "source": {
+            "name": "SEC EDGAR — Micron 2025 Form 10-K",
+            "url": "https://www.sec.gov/Archives/edgar/data/723125/000072312525000028/mu-20250828.htm",
+            "published": "2025-10-03T12:00:00+00:00",
+            "period": "FY2025",
+        },
+        "financials": [
+            ("FY2023", 15540, -5580, -3460, -7.2),
+            ("FY2024", 25111, 1397, -1243, 1.8),
+            ("FY2025", 37380, 8620, 4100, 9.6),
+        ],
+        "margin": 23.1,
+        "growth": 48.9,
+        "debt_risk": "Medium",
+        "debt_risk_zh": "中等",
+        "currency": "USD",
+        "standard": "US GAAP",
+        "fye": "August",
+        "shares": 1115,
+        "scenario_values": (58.0, 102.0, 158.0),
+    },
+    "XNAS:AAOI": {
+        "price": 28.40,
+        "price_source": (
+            "Nasdaq historical quotes",
+            "https://www.nasdaq.com/market-activity/stocks/aaoi/historical",
+        ),
+        "summary": (
+            "Applied Optoelectronics designs and manufactures optical networking "
+            "products for data-center, CATV broadband, telecom, and FTTH customers."
+        ),
+        "summary_zh": (
+            "Applied Optoelectronics 设计并制造光通信网络产品，覆盖数据中心、"
+            "有线电视宽带、电信和光纤到户等场景。"
+        ),
+        "industry": (
+            "Optical components; customer concentration, hyperscale data-center cycles, "
+            "manufacturing yields, and module pricing dominate risk."
+        ),
+        "industry_zh": (
+            "光模块与光器件行业；客户集中度、云数据中心建设节奏、制造良率和模块价格是主要风险因子。"
+        ),
+        "accounting": (
+            "US GAAP; losses and working-capital swings make cash conversion and "
+            "customer concentration more important than headline revenue alone."
+        ),
+        "accounting_zh": (
+            "采用 US GAAP；在亏损和营运资本波动较大的阶段，现金转化率与客户"
+            "集中度比单看收入增长更关键。"
+        ),
+        "source": {
+            "name": "SEC EDGAR — Applied Optoelectronics 2024 Form 10-K",
+            "url": "https://www.sec.gov/Archives/edgar/data/1158114/000143774925005575/aaoi20241231_10k.htm",
+            "published": "2025-02-28T12:00:00+00:00",
+            "period": "FY2024",
+        },
+        "financials": [
+            ("FY2022", 222.8, -55.2, -58.0, -13.6),
+            ("FY2023", 217.6, -54.8, -64.5, -12.9),
+            ("FY2024", 331.3, -16.4, -35.2, -3.2),
+        ],
+        "margin": -4.9,
+        "growth": 52.3,
+        "debt_risk": "High",
+        "debt_risk_zh": "较高",
+        "currency": "USD",
+        "standard": "US GAAP",
+        "fye": "December",
+        "shares": 45,
+        "scenario_values": (12.0, 31.0, 63.0),
     },
 }
 

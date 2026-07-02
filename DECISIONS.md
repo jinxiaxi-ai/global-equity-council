@@ -31,3 +31,12 @@
   provider, not the source of truth.
 - Implement the provider cache contract for both SQLite and PostgreSQL. SQLite
   remains zero-setup; PostgreSQL uses psycopg and the same TTL semantics.
+
+## 2026-07-02 — Post-publish usability fixes
+
+- Language switching must affect generated research content, not only static UI
+  chrome. The backend now receives `locale` and localizes deterministic report
+  fields, chair synthesis, scenarios, debate turns, risks, and disclaimers.
+- Expand the credential-free fixture universe for user-requested US tickers
+  `MU` and `AAOI`. Keep the same `MIC:symbol` identity rule and attach SEC/market
+  provenance so search results can flow into the same analysis pipeline.

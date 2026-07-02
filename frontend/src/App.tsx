@@ -36,7 +36,15 @@ import type {
 type Theme = "light" | "dark";
 type SectionIcon = typeof BookOpen;
 
-const quickSymbols = ["AAPL", "600519.SS", "0700.HK", "7203.T", "SAP"];
+const quickSymbols = [
+  "AAPL",
+  "MU",
+  "AAOI",
+  "600519.SS",
+  "0700.HK",
+  "7203.T",
+  "SAP",
+];
 
 function formatNumber(value: number, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits }).format(
@@ -397,7 +405,7 @@ function SearchResults({
         </button>
       </div>
       {results.length === 0 ? (
-        <p className="empty-state">No supported fixture matched this query.</p>
+        <p className="empty-state">{t.noSearchResults}</p>
       ) : (
         results.map((result) => (
           <button

@@ -4,7 +4,15 @@ from app.fixtures import ASSETS
 from app.models import DataMode
 from app.providers import FixtureProvider, SQLiteCache, build_cache
 
-REQUIRED_ASSETS = ["XNAS:AAPL", "XSHG:600519", "XHKG:0700", "XTKS:7203", "XETR:SAP"]
+REQUIRED_ASSETS = [
+    "XNAS:AAPL",
+    "XSHG:600519",
+    "XHKG:0700",
+    "XTKS:7203",
+    "XETR:SAP",
+    "XNAS:MU",
+    "XNAS:AAOI",
+]
 
 
 @pytest.mark.asyncio
@@ -42,6 +50,8 @@ async def test_provider_symbols_and_company_name_search() -> None:
     assert (await provider.search("600519.SS"))[0].asset_id == "XSHG:600519"
     assert (await provider.search("Tencent"))[0].asset_id == "XHKG:0700"
     assert (await provider.search("Tokyo Stock"))[0].asset_id == "XTKS:7203"
+    assert (await provider.search("micron"))[0].asset_id == "XNAS:MU"
+    assert (await provider.search("Applied Opto"))[0].asset_id == "XNAS:AAOI"
 
 
 def test_ticker_is_not_identity() -> None:

@@ -71,6 +71,7 @@ async def analyze(request: Request, payload: AnalysisRequest) -> AnalysisReport:
             payload.asset_id.upper(),
             payload.base_currency.upper(),
             build_llm(settings),
+            payload.locale,
         )
     except KeyError as error:
         raise HTTPException(

@@ -29,7 +29,27 @@ def test_search_and_analysis_integration() -> None:
     assert len(payload["agents"]) == 14
     assert len(payload["debate"]) >= 4
     assert payload["llm_provider"] == "DeterministicDemoLLM"
-    assert "data gaps" in payload["chair_synthesis"]
+    assert "数据缺口" in payload["chair_synthesis"]
+    assert "腾讯" in payload["company_summary"] or "Tencent" in payload["company_summary"]
+    assert "不构成投资建议" in payload["disclaimer"]
+    assert payload["scenarios"][0]["name"] == "熊市"
+    assert payload["agents"][0]["thesis"].startswith(("建设性", "观察", "谨慎"))
+
+
+def test_search_supports_requested_us_tickers() -> None:
+    mu = client.get("/api/assets/search", params={"q": "mu"})
+    aaoi = client.get("/api/assets/search", params={"q": "aaoi"})
+    assert mu.status_code == 200
+    assert aaoi.status_code == 200
+    assert mu.json()[0]["asset_id"] == "XNAS:MU"
+    assert aaoi.json()[0]["asset_id"] == "XNAS:AAOI"
+
+    report = client.post(
+        "/api/analysis",
+        json={"asset_id": "XNAS:MU", "base_currency": "USD", "locale": "zh-CN"},
+    )
+    assert report.status_code == 200
+    assert "美光" in report.json()["company_summary"]
 
 
 def test_rejects_ticker_only_analysis() -> None:
