@@ -507,9 +507,13 @@ function ReportView({
 
       <div className="stat-grid">
         <Stat
-          label={t.price}
+          label={
+            report.market_price.provenance.data_mode === "live"
+              ? t.livePrice
+              : t.price
+          }
           value={`${formatNumber(report.market_price.value, 2)} ${report.market_price.unit}`}
-          detail={report.market_price.period}
+          detail={`${t.snapshotDate}: ${report.market_price.period}`}
           icon={CircleDollarSign}
         />
         <Stat
@@ -532,6 +536,24 @@ function ReportView({
           icon={FileCheck2}
         />
       </div>
+
+      {report.market_price.provenance.data_mode === "fixture" && (
+        <div className="freshness-notice" role="note">
+          <AlertTriangle size={18} />
+          <div>
+            <strong>{t.snapshotNoticeTitle}</strong>
+            <p>{t.snapshotNoticeBody}</p>
+            <small>
+              {t.snapshotDate}: {report.market_price.period} ·{" "}
+              {t.latestFilingDate}:{" "}
+              {formatDate(
+                report.evidence[0]?.published_at ?? report.as_of,
+                language,
+              )}
+            </small>
+          </div>
+        </div>
+      )}
 
       <Section title={t.overview} eyebrow="01 / MEMO" icon={BookOpen}>
         <div className="memo-grid">

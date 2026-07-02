@@ -781,6 +781,44 @@ select:focus-visible {
   color: var(--muted);
 }
 
+.freshness-notice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  margin: -34px 0 46px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--warning) 38%, var(--line));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--warning) 9%, var(--surface));
+  color: var(--text);
+}
+
+.freshness-notice svg {
+  color: var(--warning);
+  margin-top: 1px;
+}
+
+.freshness-notice strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.freshness-notice p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.freshness-notice small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .stat-accent {
   color: #effbf8;
   background: #0b6158;

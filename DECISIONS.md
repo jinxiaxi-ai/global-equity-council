@@ -40,3 +40,13 @@
 - Expand the credential-free fixture universe for user-requested US tickers
   `MU` and `AAOI`. Keep the same `MIC:symbol` identity rule and attach SEC/market
   provenance so search results can flow into the same analysis pipeline.
+
+## 2026-07-02 — Fixture freshness disclosure
+
+- Do not relabel fixed fixture prices as current data. When the market price is
+  fixture-backed, the UI now calls it a snapshot price and shows a visible
+  freshness warning with the price snapshot date and latest filing date.
+- Current market prices require a licensed or authenticated market-data provider.
+  The public demo remains no-key and deterministic; production deployments
+  should wire a real quote provider instead of silently pretending fixtures are
+  live.
